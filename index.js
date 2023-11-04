@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const app = express();
 const port = process.env.PORT || 5000
@@ -29,6 +29,7 @@ async function run() {
     await client.connect();
 
     const serviceCollection = client.db('carDoctor').collection('services')
+    const bookingCollection= client.db('carDoctor').collection('bookings')
 
     app.get('/services', async(req,res)=>{
         const cursor= serviceCollection.find();
@@ -36,7 +37,56 @@ async function run() {
         res.send(result)
     })
 
-    app.get('/services/:id', async(req,res))
+    app.get('/services/:id', async(req,res)=>{
+        const id=  req.params.id
+        const query= {_id: new ObjectId(id)}
+
+
+        const options = {
+            
+            // Include only the `title` and `imdb` fields in the returned document
+            projection: {  title: 1, price: 1 , service_id: 1 , img: 1},
+          };
+      
+        const result = await serviceCollection.findOne(query, options);
+        res.send(result)
+    })
+
+    // booking
+    app.get('/bookings', async(req,res)=>{
+        console.log(req.query.email)
+
+        let query={}
+        const result= await bookingCollection.find(query).toArray()
+        if(req.query?.email){
+            query= {email: req.query.email}
+        }
+        res.send(result)
+    })
+
+
+    app.post('/bookings/', async (req, res)=>{
+        const booking = req.body;
+        console.log(booking)
+        const result= await bookingCollection.insertOne(booking)
+        res.send(result)
+    })
+
+    app.put('/bookings/:id', async (req, res)=>{
+
+      const updatedBooking =req.body;
+
+    })
+
+
+    app.delete('/bookings/:id', async (req, res)=>{
+      const id =req.params.id
+      const query= {_id: new ObjectId(id)}
+      const result = await bookingCollection.deleteOne(query)
+      res.send(result)
+    })
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
